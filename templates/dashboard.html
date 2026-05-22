@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel | Arena Agende</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --lime: #c8f400;
+            --lime-dim: rgba(200,244,0,0.10);
+            --lime-glow: rgba(200,244,0,0.25);
+            --black: #080a06;
+            --dark: #0f120b;
+            --surface: #131710;
+            --card: #161a0f;
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(200,244,0,0.3);
+            --text: #eef2e6;
+            --muted: #56604a;
+            --success-bg: rgba(34,197,94,0.10);
+            --success: #4ade80;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ─── CUSTOM CURSOR ─── */
+        .cursor {
+            position: fixed;
+            width: 10px; height: 10px;
+            background: var(--lime);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%,-50%);
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 36px; height: 36px;
+            border: 1.5px solid rgba(200,244,0,0.45);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%,-50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* ─── STRIPE BG ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: repeating-linear-gradient(
+                -55deg,
+                transparent,
+                transparent 60px,
+                rgba(200,244,0,0.015) 60px,
+                rgba(200,244,0,0.015) 61px
+            );
+        }
+
+        /* ─── NAVBAR ─── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 4vw;
+            background: rgba(8,10,6,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .logo-mark {
+            width: 32px; height: 32px;
+            background: var(--lime);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: grid;
+            place-items: center;
+        }
+        .logo-mark i { color: var(--black); font-size: 14px; }
+        .logo-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.3rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-user {
+            font-size: 0.82rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+        .nav-user strong { color: var(--text); }
+
+        .btn-logout {
+            padding: 7px 18px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            border-radius: 6px;
+            font-family: 'Barlow', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: none;
+            text-decoration: none;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .btn-logout:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+        /* ─── MAIN LAYOUT ─── */
+        .page-wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.5rem 4vw 4rem;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* ─── FLASH MESSAGES ─── */
+        .flash-wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 1.5rem auto 0;
+            padding: 0 4vw;
+        }
+        .flash-msg {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: 1px solid;
+            animation: fade-in 0.3s ease;
+        }
+        .flash-msg.success { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.25); color: var(--success); }
+        .flash-msg.danger  { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.25); color: #f87171; }
+        .flash-msg.info    { background: var(--lime-dim); border-color: rgba(200,244,0,0.25); color: var(--lime); }
+        .flash-close { margin-left: auto; background: none; border: none; color: inherit; cursor: none; opacity: 0.6; font-size: 1rem; }
+        .flash-close:hover { opacity: 1; }
+
+        /* ─── SECTION LABEL ─── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.4rem;
+        }
+        .section-label-line { width: 24px; height: 2px; background: var(--lime); flex-shrink: 0; }
+        .section-label-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--lime);
+        }
+
+        /* ─── BOOKING FORM CARD ─── */
+        .form-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--lime), transparent);
+        }
+
+        .form-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.8rem;
+        }
+        .form-title span { color: var(--lime); }
+
+        /* ─── STEP LABEL ─── */
+        .step-label {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 0.72rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step-num {
+            width: 20px; height: 20px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.65rem;
+            color: var(--lime);
+            border-color: rgba(200,244,0,0.3);
+        }
+
+        /* ─── COURT SELECTOR ─── */
+        .court-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            margin-bottom: 1.6rem;
+        }
+        .court-selector input[type="radio"] { display: none; }
+        .court-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 10px;
+            text-align: center;
+            cursor: none;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .court-card i { font-size: 2rem; color: var(--muted); transition: color 0.2s; }
+        .court-card .court-name { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+        .court-card .court-type { font-size: 0.68rem; color: var(--muted); }
+
+        .court-selector input[type="radio"]:checked + .court-card {
+            border-color: var(--lime);
+            background: var(--lime-dim);
+            box-shadow: 0 0 0 1px rgba(200,244,0,0.15), 0 0 20px rgba(200,244,0,0.08);
+            transform: translateY(-3px);
+        }
+        .court-selector input[type="radio"]:checked + .court-card i { color: var(--lime); }
+        .court-card:hover { border-color: var(--border-hover); background: rgba(200,244,0,0.04); }
+
+        /* ─── INPUT ROW ─── */
+        .inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 1.6rem;
+        }
+
+        .input-block { display: flex; flex-direction: column; gap: 8px; }
+
+        .input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 14px;
+            transition: border-color 0.2s;
+        }
+        .input-wrap:focus-within { border-color: rgba(200,244,0,0.4); }
+        .input-wrap i { font-size: 1rem; color: var(--muted); flex-shrink: 0; }
+        .input-wrap input,
+        .input-wrap select {
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-family: 'Barlow', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            width: 100%;
+            outline: none;
+        }
+        .input-wrap select option { background: var(--dark); }
+        /* Date picker icon color fix */
+        .input-wrap input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: none; }
+
+        /* ─── CONFIRM BUTTON ─── */
+        .btn-confirm {
+            width: 100%;
+            padding: 15px;
+            background: var(--lime);
+            color: var(--black);
+            border: none;
+            border-radius: 8px;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            box-shadow: 0 0 24px var(--lime-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(200,244,0,0.4);
+        }
+
+        /* ─── RIGHT COLUMN — MY GAMES ─── */
+        .games-col { display: flex; flex-direction: column; }
+
+        .games-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.4rem;
+        }
+
+        /* ─── BOOKING ITEM ─── */
+        .booking-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: border-color 0.2s, transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .booking-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 2px;
+            background: var(--lime);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .booking-item:hover { border-color: var(--border-hover); transform: translateX(3px); }
+        .booking-item:hover::before { opacity: 1; }
+
+        .booking-icon {
+            width: 44px; height: 44px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            color: var(--lime);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .booking-info { flex: 1; min-width: 0; }
+        .booking-court {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .booking-time {
+            font-size: 0.76rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--success-bg);
+            border: 1px solid rgba(74,222,128,0.2);
+            color: var(--success);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .status-dot {
+            width: 5px; height: 5px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state {
+            background: var(--card);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 3rem 1.5rem;
+            text-align: center;
+        }
+        .empty-state i { font-size: 2.5rem; color: var(--muted); margin-bottom: 0.8rem; display: block; }
+        .empty-state p { font-size: 0.85rem; color: var(--muted); }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .page-wrap { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 560px) {
+            .inputs-row { grid-template-columns: 1fr; }
+            nav { padding: 1rem 5vw; }
+            .page-wrap { padding: 1.5rem 5vw 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAVBAR -->
+<nav>
+    <a class="logo" href="#">
+        <div class="logo-mark"><i class="bi bi-intersect"></i></div>
+        <span class="logo-text">Arena Agende</span>
+    </a>
+    <div class="nav-right">
+        <span class="nav-user d-none d-sm-inline">Olá, <strong>{{ current_user.username }}</strong></span>
+        <a href="{{ url_for('logout') }}" class="btn-logout">
+            <i class="bi bi-box-arrow-right"></i> Sair
+        </a>
+    </div>
+</nav>
+
+<!-- FLASH MESSAGES -->
+<div class="flash-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-msg {{ category }}">
+                <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<!-- MAIN -->
+<div class="page-wrap">
+
+    <!-- LEFT — BOOKING FORM -->
+    <div>
+        <div class="section-label">
+            <div class="section-label-line"></div>
+            <span class="section-label-text">Nova Reserva</span>
+        </div>
+
+        <div class="form-card">
+            <div class="form-title">Reserve sua <span>quadra</span></div>
+
+            <form action="{{ url_for('book') }}" method="POST">
+
+                <!-- Step 1: Court -->
+                <div class="step-label">
+                    <span class="step-num">1</span> Escolha a quadra
+                </div>
+                <div class="court-grid court-selector">
+                    {% for court in courts %}
+                    <div>
+                        <input type="radio" name="court_id" id="court{{ court.id }}" value="{{ court.id }}" required>
+                        <label for="court{{ court.id }}" class="court-card">
+                            {% if 'Tênis' in court.court_type %}
+                                <i class="bi bi-penta-fill"></i>
+                            {% elif 'Futsal' in court.court_type or 'Futebol' in court.court_type %}
+                                <i class="bi bi-dribbble"></i>
+                            {% elif 'Beach' in court.court_type %}
+                                <i class="bi bi-tsunami"></i>
+                            {% elif 'Basquete' in court.court_type %}
+                                <i class="bi bi-dribbble"></i>
+                            {% elif 'Vôlei' in court.court_type or 'Volei' in court.court_type %}
+                                <i class="bi bi-diagram-3"></i>
+                            {% else %}
+                                <i class="bi bi-trophy-fill"></i>
+                            {% endif %}
+                            <span class="court-name">{{ court.name }}</span>
+                            <span class="court-type">{{ court.court_type }}</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Steps 2 & 3 -->
+                <div class="inputs-row">
+                    <div class="input-block">
+                        <div class="step-label">
+                            <span class="step-num">2</span> Data
+                        </div>
+                        <div class="input-wrap">
+                            <i class="bi bi-calendar3"></i>
+                            <input type="date" name="date" required>
+                        </div>
+                    </div>
+                    <div class="input-block">
+                        <div class="step-label">
+                            <span class="step-num">3</span> Horário
+                        </div>
+                        <div class="input-wrap">
+                            <i class="bi bi-clock"></i>
+                            <select name="time_slot" required>
+                                <option value="08:00">08:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="21:00">21:00</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-confirm">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    Confirmar Agendamento
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT — MY GAMES -->
+    <div class="games-col">
+        <div class="section-label">
+            <div class="section-label-line"></div>
+            <span class="section-label-text">Meus Jogos</span>
+        </div>
+
+        <div class="games-title">Seus <span style="color:var(--lime)">jogos</span></div>
+
+        {% for booking in bookings %}
+        <div class="booking-item">
+            <div class="booking-icon">
+                <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div class="booking-info">
+                <div class="booking-court">{{ booking.court.name }}</div>
+                <div class="booking-time">
+                    <i class="bi bi-clock" style="font-size:0.7rem;margin-right:4px;"></i>
+                    {{ booking.date.strftime('%d/%m/%Y') }} às {{ booking.time_slot }}
+                </div>
+            </div>
+            <span class="status-pill">
+                <span class="status-dot"></span>
+                Confirmado
+            </span>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>Nenhuma reserva encontrada.<br>Agende sua primeira quadra!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    const cursor = document.getElementById('cursor');
+    const ring   = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        cursor.style.left = mx + 'px';
+        cursor.style.top  = my + 'px';
+    });
+
+    (function animateRing() {
+        rx += (mx - rx) * 0.12;
+        ry += (my - ry) * 0.12;
+        ring.style.left = rx + 'px';
+        ring.style.top  = ry + 'px';
+        requestAnimationFrame(animateRing);
+    })();
+
+    document.querySelectorAll('a, button, .court-card, .booking-item, select, input').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            cursor.style.width = '16px'; cursor.style.height = '16px';
+            ring.style.width = '50px';   ring.style.height = '50px';
+        });
+        el.addEventListener('mouseleave', () => {
+            cursor.style.width = '10px'; cursor.style.height = '10px';
+            ring.style.width = '36px';   ring.style.height = '36px';
+        });
+    });
+</script>
+
+</body>
+</html>

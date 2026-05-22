@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Agende | Gestão Esportiva</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --lime: #c8f400;
+            --lime-dim: rgba(200, 244, 0, 0.10);
+            --lime-glow: rgba(200, 244, 0, 0.28);
+            --black: #080a06;
+            --dark: #0f120b;
+            --card: #141810;
+            --border: rgba(255,255,255,0.07);
+            --text: #eef2e6;
+            --muted: #5a6050;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ─── CUSTOM CURSOR ─── */
+        .cursor {
+            position: fixed;
+            width: 10px; height: 10px;
+            background: var(--lime);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%,-50%);
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 36px; height: 36px;
+            border: 1.5px solid rgba(200,244,0,0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%,-50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* ─── DIAGONAL STRIPE BACKGROUND ─── */
+        .stripe-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: repeating-linear-gradient(
+                -55deg,
+                transparent,
+                transparent 60px,
+                rgba(200,244,0,0.018) 60px,
+                rgba(200,244,0,0.018) 61px
+            );
+        }
+
+        /* ─── NAVBAR ─── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 6vw;
+            background: rgba(8,10,6,0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .logo-mark {
+            width: 34px; height: 34px;
+            background: var(--lime);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: grid;
+            place-items: center;
+        }
+        .logo-mark i { color: var(--black); font-size: 15px; }
+        .logo-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.45rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text);
+        }
+
+        .nav-right { display: flex; align-items: center; gap: 8px; }
+
+        .btn-nav-ghost {
+            padding: 8px 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            border-radius: 6px;
+            font-family: 'Barlow', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: none;
+            text-decoration: none;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .btn-nav-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+        .btn-nav-lime {
+            padding: 8px 20px;
+            background: var(--lime);
+            color: var(--black);
+            border: none;
+            border-radius: 6px;
+            font-family: 'Barlow', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: none;
+            text-decoration: none;
+            transition: box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 0 16px var(--lime-glow);
+        }
+        .btn-nav-lime:hover { transform: translateY(-1px); box-shadow: 0 0 28px var(--lime-glow); }
+
+        /* ─── HERO ─── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 120px 6vw 200px;
+            overflow: hidden;
+        }
+
+        /* Court lines art */
+        .court-art {
+            position: absolute;
+            right: -4vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 54vw;
+            max-width: 720px;
+            opacity: 0.055;
+            pointer-events: none;
+        }
+
+        /* Huge italic number */
+        .hero-number {
+            position: absolute;
+            right: 3vw;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: clamp(200px, 28vw, 400px);
+            line-height: 1;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(200,244,0,0.07);
+            pointer-events: none;
+            user-select: none;
+            animation: fade-in 1.2s ease both;
+        }
+
+        /* Left accent bar */
+        .hero::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 15%; bottom: 15%;
+            width: 3px;
+            background: var(--lime);
+            box-shadow: 0 0 30px var(--lime-glow);
+        }
+
+        .hero-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.4rem;
+            animation: slide-from-left 0.6s ease both;
+        }
+        .eyebrow-line { width: 40px; height: 2px; background: var(--lime); }
+        .eyebrow-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--lime);
+        }
+
+        h1 {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: clamp(4rem, 9vw, 9rem);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 2rem;
+            max-width: 700px;
+        }
+        .h1-line { display: block; overflow: hidden; }
+        .h1-line span { display: block; animation: slide-up 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+        .h1-line:nth-child(2) span { animation-delay: 0.1s; }
+        .h1-line:nth-child(3) span { animation-delay: 0.2s; }
+        .h1-lime { color: var(--lime); }
+        .h1-outline { color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.2); }
+
+        .hero-sub {
+            font-size: 1rem;
+            color: var(--muted);
+            max-width: 420px;
+            line-height: 1.75;
+            margin-bottom: 2.8rem;
+            animation: fade-in 0.8s 0.45s ease both;
+        }
+
+        .hero-cta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            animation: fade-in 0.8s 0.6s ease both;
+        }
+
+        .btn-lime-big {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 36px;
+            background: var(--lime);
+            color: var(--black);
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            cursor: none;
+            box-shadow: 0 0 30px var(--lime-glow);
+            transition: transform 0.2s, box-shadow 0.25s;
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+        .btn-lime-big:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 50px rgba(200,244,0,0.5); }
+
+        .btn-outline-big {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 36px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            background: transparent;
+            border-radius: 4px;
+            cursor: none;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .btn-outline-big:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+
+        /* Sport tags */
+        .tags-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 2.4rem;
+            animation: fade-in 0.8s 0.75s ease both;
+        }
+        .sport-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .sport-tag:hover { border-color: var(--lime); color: var(--lime); }
+
+        /* ─── STATS BAND ─── */
+        .stats-band {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            border-top: 1px solid var(--border);
+            background: rgba(8,10,6,0.75);
+            backdrop-filter: blur(10px);
+            display: flex;
+            animation: fade-in 0.8s 0.8s ease both;
+        }
+        .stat-item {
+            flex: 1;
+            padding: 1.4rem 2vw;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-right: 1px solid var(--border);
+        }
+        .stat-item:last-child { border-right: none; }
+        .stat-icon {
+            width: 38px; height: 38px;
+            background: var(--lime-dim);
+            border: 1px solid rgba(200,244,0,0.2);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: var(--lime);
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .stat-value {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.7rem;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 2px;
+        }
+
+        /* ─── FEATURES ─── */
+        .section-features {
+            position: relative;
+            z-index: 1;
+            padding: 80px 6vw;
+        }
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 3rem;
+        }
+        .section-label-line { width: 30px; height: 2px; background: var(--lime); }
+        .section-label-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--lime);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .feat {
+            background: var(--dark);
+            padding: 2rem 1.8rem;
+            transition: background 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .feat::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--lime);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
+        }
+        .feat:hover { background: #161a0f; }
+        .feat:hover::after { transform: scaleX(1); }
+        .feat-num {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 3rem;
+            color: rgba(200,244,0,0.07);
+            line-height: 1;
+            margin-bottom: 0.6rem;
+        }
+        .feat-icon {
+            width: 44px; height: 44px;
+            background: var(--lime-dim);
+            border: 1px solid rgba(200,244,0,0.2);
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            color: var(--lime);
+            font-size: 18px;
+            margin-bottom: 1rem;
+        }
+        .feat-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .feat-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes slide-up {
+            from { transform: translateY(110%); }
+            to   { transform: translateY(0); }
+        }
+        @keyframes slide-from-left {
+            from { transform: translateX(-24px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .hero-number { display: none; }
+            .court-art { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-band { flex-wrap: wrap; }
+            .stat-item { min-width: 50%; border-bottom: 1px solid var(--border); }
+        }
+        @media (max-width: 560px) {
+            .hero { padding: 100px 5vw 220px; }
+            .btn-lime-big, .btn-outline-big { padding: 13px 24px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="stripe-bg"></div>
+
+<!-- NAVBAR -->
+<nav>
+    <a class="logo" href="#">
+        <div class="logo-mark"><i class="bi bi-intersect"></i></div>
+        <span class="logo-text">Arena Agende</span>
+    </a>
+    <div class="nav-right">
+        <a href="{{ url_for('login') }}" class="btn-nav-ghost">Entrar</a>
+        <a href="{{ url_for('register') }}" class="btn-nav-lime">Criar Conta</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+
+    <!-- Decorative court SVG -->
+    <svg class="court-art" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="560" height="360" stroke="#c8f400" stroke-width="3"/>
+        <line x1="300" y1="20" x2="300" y2="380" stroke="#c8f400" stroke-width="2"/>
+        <circle cx="300" cy="200" r="60" stroke="#c8f400" stroke-width="2"/>
+        <rect x="20" y="90" width="110" height="220" stroke="#c8f400" stroke-width="2"/>
+        <rect x="470" y="90" width="110" height="220" stroke="#c8f400" stroke-width="2"/>
+        <rect x="20" y="140" width="55" height="120" stroke="#c8f400" stroke-width="2"/>
+        <rect x="525" y="140" width="55" height="120" stroke="#c8f400" stroke-width="2"/>
+        <circle cx="300" cy="200" r="5" fill="#c8f400"/>
+        <circle cx="20" cy="200" r="5" fill="#c8f400"/>
+        <circle cx="580" cy="200" r="5" fill="#c8f400"/>
+        <path d="M 20 80 A 190 190 0 0 1 20 320" stroke="#c8f400" stroke-width="2" fill="none"/>
+        <path d="M 580 80 A 190 190 0 0 0 580 320" stroke="#c8f400" stroke-width="2" fill="none"/>
+    </svg>
+
+    <!-- Big background number -->
+    <div class="hero-number">1</div>
+
+    <div class="hero-eyebrow">
+        <div class="eyebrow-line"></div>
+        <span class="eyebrow-text">Plataforma Esportiva</span>
+    </div>
+
+    <h1>
+        <div class="h1-line"><span>Reserve</span></div>
+        <div class="h1-line"><span class="h1-lime">sua quadra.</span></div>
+        <div class="h1-line"><span class="h1-outline">Jogue mais.</span></div>
+    </h1>
+
+    <p class="hero-sub">
+        Agendamento inteligente para clubes, arenas e jogadores.
+        Rápido, sem conflitos e disponível 24/7.
+    </p>
+
+    <div class="hero-cta">
+        <a href="{{ url_for('login') }}" class="btn-lime-big">
+            <i class="bi bi-lightning-charge-fill"></i>
+            Acessar Arena
+        </a>
+        <a href="{{ url_for('register') }}" class="btn-outline-big">
+            <i class="bi bi-person-plus"></i>
+            Criar Conta
+        </a>
+    </div>
+
+    <div class="tags-row">
+        <span class="sport-tag"><i class="bi bi-dribbble"></i> Basquete</span>
+        <span class="sport-tag"><i class="bi bi-tsunami"></i> Beach Tennis</span>
+        <span class="sport-tag"><i class="bi bi-circle"></i> Tênis</span>
+        <span class="sport-tag"><i class="bi bi-grid-3x3"></i> Futsal</span>
+        <span class="sport-tag"><i class="bi bi-diagram-3"></i> Vôlei</span>
+    </div>
+
+    <!-- Bottom stats strip -->
+    <div class="stats-band">
+        <div class="stat-item">
+            <div class="stat-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div>
+                <div class="stat-value">2K+</div>
+                <div class="stat-label">Reservas / mês</div>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon"><i class="bi bi-shield-fill-check"></i></div>
+            <div>
+                <div class="stat-value">0</div>
+                <div class="stat-label">Conflitos</div>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
+            <div>
+                <div class="stat-value">4.9★</div>
+                <div class="stat-label">Avaliação média</div>
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon"><i class="bi bi-clock-fill"></i></div>
+            <div>
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Disponível sempre</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section-features">
+    <div class="section-label">
+        <div class="section-label-line"></div>
+        <span class="section-label-text">Por que usar</span>
+    </div>
+    <div class="features-grid">
+        <div class="feat">
+            <div class="feat-num">01</div>
+            <div class="feat-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="feat-title">Agendamento Instantâneo</div>
+            <div class="feat-desc">Confirme seu horário em segundos. Sem filas, sem ligações, sem espera.</div>
+        </div>
+        <div class="feat">
+            <div class="feat-num">02</div>
+            <div class="feat-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="feat-title">Horário Garantido</div>
+            <div class="feat-desc">O sistema bloqueia conflitos automaticamente. Ninguém toma o seu horário.</div>
+        </div>
+        <div class="feat">
+            <div class="feat-num">03</div>
+            <div class="feat-icon"><i class="bi bi-phone"></i></div>
+            <div class="feat-title">Funciona em Qualquer Lugar</div>
+            <div class="feat-desc">Celular, tablet ou computador. Gerencie sua arena de qualquer lugar.</div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const cursor = document.getElementById('cursor');
+    const ring   = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        cursor.style.left = mx + 'px';
+        cursor.style.top  = my + 'px';
+    });
+
+    (function animateRing() {
+        rx += (mx - rx) * 0.12;
+        ry += (my - ry) * 0.12;
+        ring.style.left = rx + 'px';
+        ring.style.top  = ry + 'px';
+        requestAnimationFrame(animateRing);
+    })();
+
+    document.querySelectorAll('a, .feat, .sport-tag').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            cursor.style.width = '18px'; cursor.style.height = '18px';
+            ring.style.width = '54px';   ring.style.height = '54px';
+        });
+        el.addEventListener('mouseleave', () => {
+            cursor.style.width = '10px'; cursor.style.height = '10px';
+            ring.style.width = '36px';   ring.style.height = '36px';
+        });
+    });
+</script>
+
+</body>
+</html>

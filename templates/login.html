@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Arena Agende</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,900;1,900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --lime: #c8f400;
+            --lime-dim: rgba(200,244,0,0.09);
+            --lime-glow: rgba(200,244,0,0.25);
+            --black: #080a06;
+            --dark: #0f120b;
+            --surface: #131710;
+            --card: #161a0f;
+            --border: rgba(255,255,255,0.07);
+            --text: #eef2e6;
+            --muted: #56604a;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ─── CURSOR ─── */
+        .cursor {
+            position: fixed; width: 10px; height: 10px;
+            background: var(--lime); border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%,-50%);
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+        .cursor-ring {
+            position: fixed; width: 36px; height: 36px;
+            border: 1.5px solid rgba(200,244,0,0.45); border-radius: 50%;
+            pointer-events: none; z-index: 9998;
+            transform: translate(-50%,-50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* ─── STRIPE BG ─── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: repeating-linear-gradient(
+                -55deg, transparent, transparent 60px,
+                rgba(200,244,0,0.015) 60px, rgba(200,244,0,0.015) 61px
+            );
+        }
+
+        /* ─── SPLIT LAYOUT ─── */
+        .split {
+            display: flex;
+            flex: 1;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* LEFT — decorative panel */
+        .split-left {
+            flex: 1;
+            background: var(--dark);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .split-left::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 3px;
+            background: var(--lime);
+            box-shadow: 0 0 30px var(--lime-glow);
+        }
+
+        /* Court SVG art */
+        .court-svg {
+            position: absolute;
+            bottom: -40px; right: -40px;
+            width: 80%;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        /* Big number */
+        .deco-number {
+            position: absolute;
+            bottom: -20px; right: 20px;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; font-style: italic;
+            font-size: clamp(180px, 20vw, 320px);
+            line-height: 1;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(200,244,0,0.06);
+            user-select: none; pointer-events: none;
+        }
+
+        .left-logo {
+            display: flex; align-items: center; gap: 10px; text-decoration: none;
+        }
+        .logo-mark {
+            width: 32px; height: 32px;
+            background: var(--lime);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: grid; place-items: center;
+        }
+        .logo-mark i { color: var(--black); font-size: 14px; }
+        .logo-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; font-size: 1.3rem;
+            letter-spacing: 3px; text-transform: uppercase; color: var(--text);
+        }
+
+        .left-bottom {}
+        .left-tagline {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; font-style: italic;
+            font-size: clamp(2.2rem, 4vw, 3.8rem);
+            text-transform: uppercase;
+            line-height: 0.9;
+            margin-bottom: 1rem;
+        }
+        .left-tagline .accent { color: var(--lime); }
+        .left-tagline .outline {
+            color: transparent;
+            -webkit-text-stroke: 1.5px rgba(255,255,255,0.18);
+        }
+        .left-sub { font-size: 0.85rem; color: var(--muted); line-height: 1.6; max-width: 280px; }
+
+        /* ─── RIGHT — FORM PANEL ─── */
+        .split-right {
+            width: 460px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2.5rem;
+        }
+
+        .form-wrap { width: 100%; max-width: 360px; }
+
+        .form-eyebrow {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 1rem;
+        }
+        .eyebrow-line { width: 24px; height: 2px; background: var(--lime); }
+        .eyebrow-text {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700; font-size: 0.72rem;
+            letter-spacing: 0.22em; text-transform: uppercase; color: var(--lime);
+        }
+
+        .form-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; font-style: italic;
+            font-size: 2.6rem; text-transform: uppercase;
+            letter-spacing: 1px; line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .form-sub { font-size: 0.84rem; color: var(--muted); margin-bottom: 2.2rem; }
+
+        /* Flash */
+        .flash-msg {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px;
+            margin-bottom: 14px; font-size: 0.84rem; font-weight: 600; border: 1px solid;
+            animation: fade-in 0.3s ease;
+        }
+        .flash-msg.success { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.25); color: #4ade80; }
+        .flash-msg.danger  { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.25); color: #f87171; }
+        .flash-msg.info    { background: var(--lime-dim); border-color: rgba(200,244,0,0.25); color: var(--lime); }
+        .flash-msg.warning { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.25); color: #fbbf24; }
+        .flash-close { margin-left: auto; background: none; border: none; color: inherit; cursor: none; opacity: 0.6; }
+        .flash-close:hover { opacity: 1; }
+
+        /* Input field */
+        .field { margin-bottom: 14px; }
+        .field-label {
+            display: block; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 6px;
+        }
+        .input-wrap {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px;
+            transition: border-color 0.2s;
+        }
+        .input-wrap:focus-within { border-color: rgba(200,244,0,0.4); }
+        .input-wrap i { font-size: 1rem; color: var(--muted); flex-shrink: 0; }
+        .input-wrap input {
+            border: none; background: transparent;
+            color: var(--text); font-family: 'Barlow', sans-serif;
+            font-weight: 600; font-size: 0.92rem;
+            width: 100%; outline: none;
+        }
+        .input-wrap input::placeholder { color: var(--muted); font-weight: 400; }
+
+        /* Password toggle */
+        .eye-btn {
+            background: none; border: none; color: var(--muted);
+            cursor: none; font-size: 1rem; padding: 0; line-height: 1;
+            flex-shrink: 0; transition: color 0.2s;
+        }
+        .eye-btn:hover { color: var(--text); }
+
+        /* Submit */
+        .btn-submit {
+            width: 100%; margin-top: 20px;
+            padding: 14px;
+            background: var(--lime); color: var(--black);
+            border: none; border-radius: 8px;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900; font-size: 1.1rem;
+            letter-spacing: 2px; text-transform: uppercase;
+            cursor: none;
+            box-shadow: 0 0 24px var(--lime-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(200,244,0,0.4); }
+
+        .form-footer {
+            text-align: center; margin-top: 1.4rem;
+            font-size: 0.82rem; color: var(--muted);
+        }
+        .form-footer a { color: var(--lime); text-decoration: none; font-weight: 600; }
+        .form-footer a:hover { text-decoration: underline; }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 768px) {
+            .split-left { display: none; }
+            .split-right { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div class="split">
+
+    <!-- LEFT PANEL -->
+    <div class="split-left">
+        <a class="left-logo" href="{{ url_for('index') }}">
+            <div class="logo-mark"><i class="bi bi-intersect"></i></div>
+            <span class="logo-text">Arena Agende</span>
+        </a>
+
+        <div class="deco-number">1</div>
+
+        <svg class="court-svg" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="560" height="360" stroke="#c8f400" stroke-width="3"/>
+            <line x1="300" y1="20" x2="300" y2="380" stroke="#c8f400" stroke-width="2"/>
+            <circle cx="300" cy="200" r="60" stroke="#c8f400" stroke-width="2"/>
+            <rect x="20" y="90" width="110" height="220" stroke="#c8f400" stroke-width="2"/>
+            <rect x="470" y="90" width="110" height="220" stroke="#c8f400" stroke-width="2"/>
+            <circle cx="300" cy="200" r="5" fill="#c8f400"/>
+            <path d="M 20 80 A 190 190 0 0 1 20 320" stroke="#c8f400" stroke-width="2" fill="none"/>
+            <path d="M 580 80 A 190 190 0 0 0 580 320" stroke="#c8f400" stroke-width="2" fill="none"/>
+        </svg>
+
+        <div class="left-bottom">
+            <div class="left-tagline">
+                <span class="accent">Entre</span><br>
+                na sua<br>
+                <span class="outline">arena.</span>
+            </div>
+            <p class="left-sub">Gerencie quadras, reservas e jogos em um só lugar. Rápido e sem conflitos.</p>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="split-right">
+        <div class="form-wrap">
+
+            <div class="form-eyebrow">
+                <div class="eyebrow-line"></div>
+                <span class="eyebrow-text">Acesso à plataforma</span>
+            </div>
+            <div class="form-title">Fazer Login</div>
+            <p class="form-sub">Bem-vindo de volta, atleta.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="flash-msg {{ category }}">
+                        <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-triangle-fill{% elif category == 'warning' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %}"></i>
+                        {{ message }}
+                        <button class="flash-close" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
+
+                <div class="field">
+                    <label class="field-label">E-mail</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-envelope"></i>
+                        <input type="email" name="email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="field-label">Senha</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock"></i>
+                        <input type="password" name="password" id="passwordInput" placeholder="••••••••" required>
+                        <button type="button" class="eye-btn" onclick="togglePassword()">
+                            <i class="bi bi-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    Entrar na Arena
+                </button>
+
+            </form>
+
+            <div class="form-footer">
+                Ainda não tem conta? <a href="{{ url_for('register') }}">Criar conta grátis</a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function togglePassword() {
+        const input = document.getElementById('passwordInput');
+        const icon  = document.getElementById('eyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'bi bi-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'bi bi-eye';
+        }
+    }
+
+    const cursor = document.getElementById('cursor');
+    const ring   = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+    });
+    (function animateRing() {
+        rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+        ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+        requestAnimationFrame(animateRing);
+    })();
+    document.querySelectorAll('a, button, .input-wrap').forEach(el => {
+        el.addEventListener('mouseenter', () => { cursor.style.width='16px'; cursor.style.height='16px'; ring.style.width='50px'; ring.style.height='50px'; });
+        el.addEventListener('mouseleave', () => { cursor.style.width='10px'; cursor.style.height='10px'; ring.style.width='36px'; ring.style.height='36px'; });
+    });
+</script>
+</body>
+</html>
