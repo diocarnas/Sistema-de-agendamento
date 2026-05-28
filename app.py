@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -17,6 +17,15 @@ login_manager.login_view = 'login'
 login_manager.login_message = "Por favor, faça login para acessar esta página."
 login_manager.login_message_category = "info"
 
+# --- TIPOS DE QUADRA DISPONÍVEIS ---
+COURT_TYPES = [
+    ('society',      'Society'),
+    ('volei',        'Vôlei'),
+    ('futsal',       'Futsal'),
+    ('quadra_areia', 'Quadra de Areia'),
+    ('campo',        'Campo'),
+]
+
 # --- MODELOS ---
 
 class User(db.Model, UserMixin):
@@ -29,8 +38,15 @@ class User(db.Model, UserMixin):
 class Court(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    court_type = db.Column(db.String(30), nullable=False)
+    # court_type deve conter um dos valores da chave em COURT_TYPES
+    # ex: 'society', 'volei', 'futsal', 'quadra_areia', 'campo'
+    court_type = db.Column(db.String(30), nullable=False, index=True)
     bookings = db.relationship('Booking', backref='court', lazy=True)
+
+    @property
+    def court_type_label(self):
+        """Retorna o rótulo legível do tipo de quadra."""
+        return dict(COURT_TYPES).get(self.court_type, self.court_type)
 
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -98,9 +114,57 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    courts = Court.query.all()
-    user_bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.date.asc()).all()
-    return render_template('dashboard.html', courts=courts, bookings=user_bookings)
+    # Lê o filtro de tipo de quadra da query string (?court_type=...)
+    selected_type = request.args.get('court_type', '')
+
+    # Filtra as quadras pelo tipo, ou retorna todas se nenhum tipo for selecionado
+    valid_types = [key for key, _ in COURT_TYPES]
+    if selected_type and selected_type in valid_types:
+        courts = Court.query.filter_by(court_type=selected_type).all()
+    else:
+        selected_type = ''
+        courts = Court.query.all()
+
+    user_bookings = (
+        Booking.query
+        .filter_by(user_id=current_user.id)
+        .order_by(Booking.date.asc())
+        .all()
+    )
+
+    return render_template(
+        'dashboard.html',
+        courts=courts,
+        bookings=user_bookings,
+        court_types=COURT_TYPES,       # lista completa para montar os botões/filtro
+        selected_type=selected_type,   # tipo atualmente selecionado
+    )
+
+@app.route('/api/courts')
+@login_required
+def api_courts():
+    """
+    Endpoint JSON para filtrar quadras por tipo dinamicamente (AJAX).
+    Uso: GET /api/courts?court_type=futsal
+    Retorna: [{"id": 1, "name": "Quadra A", "court_type": "futsal", "court_type_label": "Futsal"}, ...]
+    """
+    court_type = request.args.get('court_type', '')
+    valid_types = [key for key, _ in COURT_TYPES]
+
+    query = Court.query
+    if court_type and court_type in valid_types:
+        query = query.filter_by(court_type=court_type)
+
+    courts = query.all()
+    return jsonify([
+        {
+            'id': c.id,
+            'name': c.name,
+            'court_type': c.court_type,
+            'court_type_label': c.court_type_label,
+        }
+        for c in courts
+    ])
 
 @app.route('/book', methods=['POST'])
 @login_required
@@ -142,6 +206,27 @@ def book():
         flash('Erro ao processar agendamento. Tente novamente.', 'danger')
     
     return redirect(url_for('dashboard'))
+
+@app.route('/cancel/<int:booking_id>', methods=['POST'])
+@login_required
+def cancel_booking(booking_id):
+    booking = db.session.get(Booking, booking_id)
+
+    # Garante que só o dono pode cancelar
+    if not booking or booking.user_id != current_user.id:
+        flash('Agendamento não encontrado.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        db.session.delete(booking)
+        db.session.commit()
+        flash('Agendamento cancelado com sucesso.', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('Erro ao cancelar agendamento. Tente novamente.', 'danger')
+
+    return redirect(url_for('dashboard'))
+
 
 @app.route('/logout')
 def logout():
